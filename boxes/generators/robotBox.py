@@ -28,6 +28,13 @@ class RobotBox(Boxes):
             help="Soll der Umriss eines Calliope in den Deckel gezeichnet werden?"
         )
         self.argparser.add_argument(
+            "--draw_tabs",
+            action="store",  # Checkbox in der UI
+            type=BoolArg(),
+            default=True,
+            help="Sollen Tabs zur Positionierung hinzugefügt werden?"
+        )
+        self.argparser.add_argument(
             "--line_sensor",
             action="store",  # Checkbox in der UI
             type=BoolArg(),
@@ -45,8 +52,8 @@ class RobotBox(Boxes):
     def render(self):
         edges = "eeee"
         walls = [
-            (self.x, self.y, "bottom"),  # Boden
-            (self.x, self.y, "top"),  # Deckel
+            (self.x, self.y, "top"),  # Boden
+            (self.x, self.y, "bottom"),  # Deckel
             (self.x, self.h, "front"),  # Vorderseite
             (self.y, self.h, "left"),  # Seite links
             (self.x, self.h, "back"),  # Rückseite
@@ -347,20 +354,40 @@ class RobotBox(Boxes):
 
             callbacks = [add_corner_holes, None, None, None]
             # queue: bottom top front left back right
-            if side == "bottom":
-                self.rectangularWall(w, h, edges=edges, callback=callbacks, move="right")
-            if side == "top":
-                self.rectangularWall(w, h, edges=edges, callback=callbacks, move="up")
-            if side == "front":
-                self.rectangularWall(w, h, edges=edges, callback=callbacks)
-            if side == "left":
-                self.rectangularWall(w, h, edges=edges, callback=callbacks, move="left up")
-            if side == "back":
-                self.rectangularWall(w, h, edges=edges, callback=callbacks, move="right")
-            if side == "right":
-                self.rectangularWall(w, h, edges=edges, callback=callbacks, move="right up")
+            middle_notch_A = [w / 3, -90, self.thickness, 90, w / 3, 90, self.thickness, -90, w / 3, 90]
+            middle_notch_B = [w / 3, 90, self.thickness, -90, w / 3, -90, self.thickness, 90, w / 3, 90]
+            end_notch_A = [2 * h / 3, -90, self.thickness, 90, h / 3, 90, self.thickness, 0]
+            start_notch_A = [0, -90, self.thickness, 90, h / 3, 90, self.thickness, -90, 2 * h / 3]
 
-        self.moveTo(self.thickness+2,0,-90)
+            if side == "bottom":
+                if self.draw_tabs:
+                    self.polygonWall([w/3,-90,self.thickness,90,w/3,90,self.thickness,-90,w/3,90,2*h/3,-90,self.thickness,90,h/3+self.thickness,90,self.thickness+w/3,90,self.thickness,-90,w/3,-90,self.thickness,90,w/3+self.thickness,90,h/3+self.thickness,90,self.thickness,None],edge="e",callback=callbacks, move="up", label="bottom")
+                else:
+                    self.rectangularWall(w, h, edges=edges, callback=callbacks, move="up", label="bottom")
+            if side == "top":
+                self.rectangularWall(w, h, edges=edges, callback=callbacks, move="right", label="top")
+            if side == "front":
+                if self.draw_tabs:
+                    self.polygonWall([0,270,self.thickness,90,w/3,90,self.thickness,-90,w/3,-90,self.thickness,90,w/3,90,self.thickness+h,90,w,None],edge="e", callback=callbacks, label="front")
+                else:
+                    self.rectangularWall(w, h, edges=edges, callback=callbacks, label="front")
+            if side == "left":
+                if self.draw_tabs:
+                 self.polygonWall([w/3,-90,self.thickness,90,2*w/3,90,self.thickness+h,90,w,None],edge="e",callback=callbacks, move="left up", label="left")
+                else:
+                    self.rectangularWall(w, h, edges=edges, callback=callbacks, move="left up", label="left")
+            if side == "back":
+                if self.draw_tabs:
+                    self.polygonWall([w/3,-90,self.thickness,90,w/3,90,self.thickness,-90,w/3,90,h,90,w,None],edge="e", callback=callbacks, move="right", label="back")
+                else:
+                    self.rectangularWall(w, h, edges=edges, callback=callbacks, move="right", label="back")
+            if side == "right":
+                if self.draw_tabs:
+                    self.polygonWall([0,270,self.thickness,90,2*w/3,90,self.thickness,-90,w/3,90,h,90,w,None],edge="e",callback=callbacks, move="right up", label="right")
+                else:
+                    self.rectangularWall(w, h, edges=edges, callback=callbacks, move="right up", label="right")
+
+        self.moveTo(self.thickness*4,0,-90)
         for _ in range(2):
             self.polyline(10,-90,self.thickness,90,20,90,self.thickness,-90,10,90,10,(90,3),34,(90,3),10,90)
             self.moveTo(self.thickness+40,0)
